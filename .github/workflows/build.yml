@@ -1,0 +1,23 @@
+name: build
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: xmake-io/github-action-setup-xmake@v1
+      - name: Build
+        run: |
+          xmake f -y -m release
+          xmake build -y
+      - name: Package
+        shell: pwsh
+        run: |
+          $dll = Get-ChildItem build/windows/x64/release -Filter *.dll | Select-Object -First 1
+          ./tools/dist/package-mod.ps1 -ReleaseBin $dll.FullName -ProjectName $dll.BaseName
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plugin
+          path: build/dist/*.zip
